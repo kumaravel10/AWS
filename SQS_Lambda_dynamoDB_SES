@@ -52,8 +52,8 @@ exports.handler = async(event) => {
         Source: "jkmail550@gmail.com",
     };
     
-    await ses.sendEmail(eParams).promise();
-    console.log('email sent successfully');
+    var result = await ses.sendEmail(eParams).promise();
+    console.log('email sent successfully', result);
     } catch(error){
         console.error('Error in executing lambda:', error);
         return {"statusCode": 500, "message": "Error while execution"};
