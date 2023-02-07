@@ -1,0 +1,67 @@
+const aws = require("aws-sdk")
+//import aws from 'aws-sdk';
+
+//intialize dynamoDB client
+const dynamoDB = new aws.DynamoDB.DocumentClient({
+    region: 'us-east-1',
+    apiVersion: '2023-02-04'
+});
+
+exports.handler = async(event) => {
+    try{
+    console.log('event', event);
+    console.log('event', event.Records[0].body);
+    
+    //event has property called "Records"
+    const { Records } = event;
+    //parse the message into json object
+    const body = JSON.parse(Records[0].body);
+    //logs the message in the body
+    console.log('SQS Message body', body);
+    console.log('userid', body.userid);
+    
+    const params = {
+        TableName: "Process_Msg1",
+        Item: {
+            userid: body.userid,
+            name: body.name,
+            age: body.age
+        }
+    };
+    
+    console.log('params', params);
+    
+    await dynamoDB.put(params).promise();
+    console.log('successfully written data into dynamo db');
+    
+    ///start sending the email
+    var ses = new aws.SES({region: "us-east-1"});
+    var eParams = {
+        Destination:{
+            ToAddresses: ["jkmail550@gmail.com"],
+        },
+        
+        Message: {
+            Subject: {Data: "Test Email"},
+            Body: {
+                Text: {Data: Records[0].body}, //Data should be string
+            },
+            
+        },
+        
+        Source: "jkmail550@gmail.com",
+    };
+    
+    await ses.sendEmail(eParams).promise();
+    console.log('email sent successfully');
+    } catch(error){
+        console.error('Error in executing lambda:', error);
+        return {"statusCode": 500, "message": "Error while execution"};
+    }
+    
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify('Hello from Lambda!'),
+    };
+    return response;
+};
